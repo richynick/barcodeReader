@@ -23,44 +23,47 @@ public class BarCode {
 //    if the barcode is found return the data array contains exactly 1 element if not the function should return "-1".
 //    use the discount and the price properties to calculate the discounted price rounded to the nearest integer. solve in Java
 
-    public static int getDiscountedPrice() throws IOException {
+    public static int getDiscountedPrice()  {
         String url = "https://jsonmock.hackerrank.com/api/inventory?barcode%20";
-        URL url1 = new URL(url);
-        HttpURLConnection conn = (HttpURLConnection) url1.openConnection();
-        conn.setRequestMethod("GET");
+        try{
+            URL url1 = new URL(url);
+            HttpURLConnection conn = (HttpURLConnection) url1.openConnection();
+            conn.setRequestMethod("GET");
+            int responseCode = conn.getResponseCode();
+            if(responseCode == HttpURLConnection.HTTP_OK){
+                try(BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream()))){
+                    StringBuilder res = new StringBuilder();
+                    String line;
+                    while ((line = reader.readLine()) != null){
+                        res.append(line);
+                    }
+                    System.out.println("respond: " + res);
 
-        int responseCode = conn.getResponseCode();
-        if(responseCode == HttpURLConnection.HTTP_OK){
-            try(BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream()))){
-                StringBuilder res = new StringBuilder();
-                String line;
-                while ((line = reader.readLine()) != null){
-                    res.append(line);
+                    JSONObject jsonObject = new JSONObject(res.toString());
+                    JSONArray dataArray = jsonObject.getJSONArray("data");
+                    System.out.println("DataArray: " + dataArray);
+
+                    if(!dataArray.isEmpty()){
+                        JSONObject item = dataArray.getJSONObject(0);
+                        double price = item.getDouble("price");
+                        double discount = item.getDouble("discount");
+                        double discountedPrice = price * (1 - discount / 100);
+                        System.out.println("discountedPrice: " + discountedPrice);
+                        return (int) Math.round(discountedPrice);
+
+                    }else {
+                        return -1; // Barcode not found
+                    }
+                }catch (IOException e){
+                    e.printStackTrace();
                 }
-                System.out.println("respond: " + res);
-
-                JSONObject jsonObject = new JSONObject(res.toString());
-                JSONArray dataArray = jsonObject.getJSONArray("data");
-                System.out.println("DataArray: " + dataArray);
-                boolean change = dataArray.length() == 1;
-
-                if(!dataArray.isEmpty()){
-                    JSONObject item = dataArray.getJSONObject(0);
-                    double price = item.getDouble("price");
-                    double discount = item.getDouble("discount");
-                    double discountedPrice = price * (1 - discount / 100);
-                    System.out.println("discountedPrice: " + discountedPrice);
-                    return (int) Math.round(discountedPrice);
-
-                }else {
-                    return -1; // Barcode not found
-                }
-            }catch (IOException e){
-                e.printStackTrace();
+            }else {
+                return -1;
             }
-        }else {
-            return -1;
+
+        } catch(IOException exc){
+            throw new RuntimeException(exc);
         }
-        return responseCode;
+        return -1;
     }
 }
